@@ -1,6 +1,6 @@
 export enum TOKEN_TYPE {
-  WORD = "word",
-  NUMBER = "number",
+  KEYWORD = "keyword",
+  ARGUMENT = "argument",
 }
 
 type TTokenTypes = `${TOKEN_TYPE}`;
@@ -11,7 +11,7 @@ export enum KEYWORD {
   LINE = "Line",
 }
 
-type TKeywords = `${KEYWORD}`;
+export type TKeywords = `${KEYWORD}`;
 
 export enum SYNTAX_TYPE {
   NumberLiteral = "NumberLiteral",
@@ -33,7 +33,7 @@ export type TExpression = {
 
 type TArgument = {
   type: SYNTAX_TYPE;
-  value: number;
+  value: string;
 };
 
 export type TAbstractSyntaxTree = {
