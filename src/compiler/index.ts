@@ -9,6 +9,10 @@ import {
 } from "./types";
 
 export class Compiler {
+  private paperWidth: number = 0;
+  private paperHeight: number = 0;
+  private penColor: string = "";
+
   private lexer(code: string): TToken[] {
     return code
       .split(/\s+/)
@@ -30,47 +34,72 @@ export class Compiler {
     while (tokens.length) {
       const currentToken = tokens.shift();
       let argument: TToken | undefined;
-      let expression: TExpression;
+      let i: number;
 
       if (currentToken?.type === TOKEN_TYPE.WORD) {
         switch (currentToken.value) {
           case KEYWORD.PAPER:
-            argument = tokens.shift();
-            expression = {
+            const paperExpression: TExpression = {
               type: SYNTAX_TYPE.CallExpression,
               name: KEYWORD.PAPER,
               arguments: [],
             };
-
-            if (argument?.type === TOKEN_TYPE.NUMBER) {
-              expression.arguments.push({
-                type: SYNTAX_TYPE.NumberLiteral,
-                value: Number(argument.value),
-              });
-
-              ast.body.push(expression);
-            } else {
-              throw `${KEYWORD.PAPER} command must be followed by a number.`;
-            }
-
-            break;
-
-          case KEYWORD.PEN:
-            break;
-
-          case KEYWORD.LINE:
-            expression = {
-              type: SYNTAX_TYPE.CallExpression,
-              name: KEYWORD.LINE,
-              arguments: [],
-            };
-            let i = 4;
+            i = 3;
 
             while (i--) {
               argument = tokens.shift();
 
               if (argument?.type === TOKEN_TYPE.NUMBER) {
-                expression.arguments.push({
+                paperExpression.arguments.push({
+                  type: SYNTAX_TYPE.NumberLiteral,
+                  value: Number(argument.value),
+                });
+              } else {
+                throw `${KEYWORD.PAPER} command must be followed by 3 numbers.`;
+              }
+            }
+
+            this.paperWidth = paperExpression.arguments[1].value;
+            this.paperHeight = paperExpression.arguments[2].value;
+
+            ast.body.push(paperExpression);
+            break;
+
+          case KEYWORD.PEN:
+            const penExpression: TExpression = {
+              type: SYNTAX_TYPE.CallExpression,
+              name: KEYWORD.PEN,
+              arguments: [],
+            };
+            argument = tokens.shift();
+
+            if (argument?.type === TOKEN_TYPE.NUMBER) {
+              penExpression.arguments.push({
+                type: SYNTAX_TYPE.NumberLiteral,
+                value: Number(argument.value),
+              });
+
+              this.penColor = argument.value;
+            } else {
+              throw `${KEYWORD.PAPER} command must be followed by 4 numbers.`;
+            }
+
+            ast.body.push(penExpression);
+            break;
+
+          case KEYWORD.LINE:
+            const lineExpression: TExpression = {
+              type: SYNTAX_TYPE.CallExpression,
+              name: KEYWORD.LINE,
+              arguments: [],
+            };
+            i = 4;
+
+            while (i--) {
+              argument = tokens.shift();
+
+              if (argument?.type === TOKEN_TYPE.NUMBER) {
+                lineExpression.arguments.push({
                   type: SYNTAX_TYPE.NumberLiteral,
                   value: Number(argument.value),
                 });
@@ -79,8 +108,7 @@ export class Compiler {
               }
             }
 
-            ast.body.push(expression);
-
+            ast.body.push(lineExpression);
             break;
 
           default:
@@ -98,9 +126,9 @@ export class Compiler {
     const svg_ast: TSVGAbstractSyntaxTree = {
       tag: "svg",
       attr: {
-        width: 100,
-        height: 100,
-        viewBox: "0 0 100 100",
+        width: this.paperWidth,
+        height: this.paperHeight,
+        viewBox: `0 0 ${this.paperWidth} ${this.paperHeight}`,
         xmlns: "http://www.w3.org/2000/svg",
         version: "1.1",
       },
@@ -113,21 +141,21 @@ export class Compiler {
 
       switch (node.name) {
         case KEYWORD.PAPER:
-          const paper_color = 100 - node.arguments[0].value;
+          const paperColor = 100 - node.arguments[0].value;
           data = {
             tag: "rect",
             attr: {
               x: 0,
               y: 0,
-              width: 100,
-              height: 100,
+              width: this.paperWidth,
+              height: this.paperHeight,
               fill:
                 "rgb(" +
-                paper_color +
+                paperColor +
                 "%," +
-                paper_color +
+                paperColor +
                 "%," +
-                paper_color +
+                paperColor +
                 "%)",
             },
           } as TSVGAbstractSyntaxTree;
@@ -150,7 +178,14 @@ export class Compiler {
               y: arg2.value,
               width: arg3.value,
               height: arg4.value,
-              fill: "white",
+              fill:
+                "rgb(" +
+                this.penColor +
+                "%," +
+                this.penColor +
+                "%," +
+                this.penColor +
+                "%)",
             },
           } as TSVGAbstractSyntaxTree;
 

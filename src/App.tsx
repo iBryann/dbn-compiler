@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { Compiler } from "./compiler";
 
 export function App() {
-  const [code, setCode] = useState(`Paper 100\rPen 0\rLine 10 45 80 10`);
+  const [code, setCode] = useState(
+    `Paper 100 300 200\rPen 100\rLine 0 20 150 20\rLine 0 95 300 10\rLine 10 150 150 1`
+  );
   const [svg, setSvg] = useState("");
   const compiler = new Compiler();
 
