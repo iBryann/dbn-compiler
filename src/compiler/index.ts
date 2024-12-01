@@ -1,53 +1,12 @@
-enum TOKEN_TYPE {
-  WORD = "word",
-  NUMBER = "number",
-}
-
-type TTokenTypes = `${TOKEN_TYPE}`;
-
-enum KEYWORD {
-  PAPER = "Paper",
-  PEN = "Pen",
-  LINE = "Line",
-}
-
-type TKeywords = `${KEYWORD}`;
-
-enum SYNTAX_TYPE {
-  NumberLiteral = "NumberLiteral",
-  CallExpression = "CallExpression",
-}
-
-type TSyntaxTypes = `${SYNTAX_TYPE}`;
-
-type TToken = {
-  type: TTokenTypes;
-  value: string;
-};
-
-type TExpression = {
-  type: TSyntaxTypes;
-  name: TKeywords;
-  arguments: TArgument[];
-};
-
-type TArgument = {
-  type: SYNTAX_TYPE;
-  value: number;
-};
-
-type TAbstractSyntaxTree = {
-  type: string;
-  body: TExpression[];
-};
-
-type TSVGAbstractSyntaxTree = {
-  tag: string;
-  attr: {
-    [key: string]: string | number;
-  };
-  body?: TSVGAbstractSyntaxTree[];
-};
+import {
+  TToken,
+  TAbstractSyntaxTree,
+  TSVGAbstractSyntaxTree,
+  KEYWORD,
+  SYNTAX_TYPE,
+  TOKEN_TYPE,
+  TExpression,
+} from "./types";
 
 export class Compiler {
   private lexer(code: string): TToken[] {
@@ -70,12 +29,14 @@ export class Compiler {
 
     while (tokens.length) {
       const currentToken = tokens.shift();
+      let argument: TToken | undefined;
+      let expression: TExpression;
 
       if (currentToken?.type === TOKEN_TYPE.WORD) {
         switch (currentToken.value) {
           case KEYWORD.PAPER:
-            const argument = tokens.shift();
-            const expression: TExpression = {
+            argument = tokens.shift();
+            expression = {
               type: SYNTAX_TYPE.CallExpression,
               name: KEYWORD.PAPER,
               arguments: [],
@@ -98,6 +59,28 @@ export class Compiler {
             break;
 
           case KEYWORD.LINE:
+            expression = {
+              type: SYNTAX_TYPE.CallExpression,
+              name: KEYWORD.LINE,
+              arguments: [],
+            };
+            let i = 4;
+
+            while (i--) {
+              argument = tokens.shift();
+
+              if (argument?.type === TOKEN_TYPE.NUMBER) {
+                expression.arguments.push({
+                  type: SYNTAX_TYPE.NumberLiteral,
+                  value: Number(argument.value),
+                });
+              } else {
+                throw `${KEYWORD.PAPER} command must be followed by 4 numbers.`;
+              }
+            }
+
+            ast.body.push(expression);
+
             break;
 
           default:
@@ -106,6 +89,7 @@ export class Compiler {
       }
     }
 
+    console.log(JSON.parse(JSON.stringify(ast)));
     return ast;
   }
 
@@ -125,11 +109,12 @@ export class Compiler {
 
     while (ast.body.length) {
       const node = ast.body.shift()!;
+      let data: TSVGAbstractSyntaxTree;
 
       switch (node.name) {
         case KEYWORD.PAPER:
           const paper_color = 100 - node.arguments[0].value;
-          const data = {
+          data = {
             tag: "rect",
             attr: {
               x: 0,
@@ -147,33 +132,51 @@ export class Compiler {
             },
           } as TSVGAbstractSyntaxTree;
 
-          svg_ast.body.push();
+          svg_ast.body.push(data);
           break;
+
         case "Pen":
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           pen_color = 100 - node.arguments[0].value;
           break;
+
         case "Line":
-        // ...
+          // @ts-ignore
+          const [arg1, arg2, arg3, arg4] = node.arguments;
+          data = {
+            tag: "rect",
+            attr: {
+              x: arg1.value,
+              y: arg2.value,
+              width: arg3.value,
+              height: arg4.value,
+              fill: "white",
+            },
+          } as TSVGAbstractSyntaxTree;
+
+          svg_ast.body.push(data);
+          break;
       }
     }
 
+    console.log(JSON.parse(JSON.stringify(svg_ast)));
     return svg_ast;
   }
 
   private generator(svg_ast: TSVGAbstractSyntaxTree) {
     function createAttrString(attr: object) {
-      return Object.keys(attr)
-        .map((key) => `${key}="${attr[key]}"`)
-        .join(" ");
+      return (
+        Object.keys(attr)
+          // @ts-ignore
+          .map((key) => `${key}="${attr[key]}"`)
+          .join(" ")
+      );
     }
 
     const svg_attr = createAttrString(svg_ast.attr);
-
-    // para cada elemento no corpo do svg_ast, gera uma svg tag
-    var elements = svg_ast.body
-      .map(function (node) {
-        return (
+    const elements = svg_ast.body
+      .map(
+        (node) =>
           "<" +
           node.tag +
           " " +
@@ -181,14 +184,19 @@ export class Compiler {
           "></" +
           node.tag +
           ">"
-        );
-      })
-      .join("\n\t"); // faz o empacotamento dos elementos com as tags de abrir e fechar o svg para completar o código SVG
+      )
+      .join("\r\t");
 
-    return "<svg " + svg_attr + ">\n" + elements + "\n</svg>";
+    return "<svg " + svg_attr + ">\r" + elements + "\r</svg>";
   }
 
   compile(code: string) {
-    return this.transformer(this.parser(this.lexer(code)));
+    try {
+      return this.generator(this.transformer(this.parser(this.lexer(code))));
+    } catch (error) {
+      console.error(error);
+    }
+
+    return "";
   }
 }
