@@ -8,7 +8,8 @@ type TTokenTypes = `${TOKEN_TYPE}`;
 export enum KEYWORD {
   PAPER = "Paper",
   PEN = "Pen",
-  LINE = "Line",
+  RECT = "Rect",
+  CIRCLE = "Circle",
 }
 
 export type TKeywords = `${KEYWORD}`;

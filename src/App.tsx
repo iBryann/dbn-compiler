@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { Compiler } from "./compiler";
 
+const CODE = `Paper black 300 200
+Pen white
+Rect 0 95 300 10
+Circle 100 100 40 red 4 transparent`;
+
 export function App() {
-  const [code, setCode] = useState(
-    `Paper black 300 200\rPen white\rLine 0 20 150 20\rLine 0 95 300 10\rLine 10 150 150 1`
-  );
+  const [code, setCode] = useState(CODE);
   const [svg, setSvg] = useState("");
   const compiler = new Compiler();
 

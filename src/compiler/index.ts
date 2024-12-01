@@ -96,10 +96,10 @@ export class Compiler {
             ast.body.push(penExpression);
             break;
 
-          case KEYWORD.LINE:
+          case KEYWORD.RECT:
             const lineExpression: TExpression = {
               type: SYNTAX_TYPE.CallExpression,
-              name: KEYWORD.LINE,
+              name: KEYWORD.RECT,
               arguments: [],
             };
             i = 4;
@@ -118,6 +118,30 @@ export class Compiler {
             }
 
             ast.body.push(lineExpression);
+            break;
+
+          case KEYWORD.CIRCLE:
+            const circleExpression: TExpression = {
+              type: SYNTAX_TYPE.CallExpression,
+              name: KEYWORD.CIRCLE,
+              arguments: [],
+            };
+            i = 6;
+
+            while (i--) {
+              argument = tokens.shift();
+
+              if (argument?.type === TOKEN_TYPE.ARGUMENT) {
+                circleExpression.arguments.push({
+                  type: SYNTAX_TYPE.NumberLiteral,
+                  value: argument.value,
+                });
+              } else {
+                throw `${KEYWORD.CIRCLE} command must be followed by 6 numbers.`;
+              }
+            }
+
+            ast.body.push(circleExpression);
             break;
 
           default:
@@ -166,7 +190,7 @@ export class Compiler {
         case KEYWORD.PEN:
           break;
 
-        case KEYWORD.LINE:
+        case KEYWORD.RECT:
           data = {
             tag: "rect",
             attr: {
@@ -175,6 +199,22 @@ export class Compiler {
               width: node.arguments[2].value,
               height: node.arguments[3].value,
               fill: this.penColor,
+            },
+          } as TSVGAbstractSyntaxTree;
+
+          svg_ast.body.push(data);
+          break;
+
+        case KEYWORD.CIRCLE:
+          data = {
+            tag: "circle",
+            attr: {
+              cx: node.arguments[0].value,
+              cy: node.arguments[1].value,
+              r: node.arguments[2].value,
+              stroke: node.arguments[3].value,
+              "stroke-width": node.arguments[4].value,
+              fill: node.arguments[5].value,
             },
           } as TSVGAbstractSyntaxTree;
 
